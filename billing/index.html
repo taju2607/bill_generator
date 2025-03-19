@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Shopping Cart</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        line-height: 1.6;
+        margin: 20px;
+      }
+
+      .container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 20px;
+      }
+
+      .block {
+        border: 1px solid #ddd;
+        border-radius: 10px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        padding: 20px;
+        background-color: #f9f9f9;
+        width: 100%;
+        max-width: 400px;
+      }
+
+      select,
+      button {
+        margin: 10px 0;
+        padding: 10px;
+        font-size: 16px;
+        width: 100%;
+        border-radius: 5px;
+        border: 1px solid #ddd;
+      }
+
+      button {
+        background-color: #007bff;
+        color: white;
+        cursor: pointer;
+      }
+
+      button:hover {
+        background-color: #0056b3;
+      }
+
+      #price,
+      #quantity {
+        font-size: 18px;
+        margin: 10px 0;
+      }
+
+      #billSummary {
+        font-size: 16px;
+        line-height: 1.5;
+        margin-top: 20px;
+      }
+
+      ul {
+        list-style-type: none;
+        padding: 0;
+      }
+
+      ul li {
+        margin-bottom: 10px;
+      }
+
+      strong {
+        font-weight: bold;
+      }
+
+      strike {
+        color: grey;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Shopping Cart</h1>
+    <div class="container">
+      <div class="block">
+        <label for="mainCategory">Main Category:</label>
+        <select id="mainCategory">
+          <option value="default">Select Main Category</option>
+          <option value="shirts">Shirts</option>
+          <option value="pants">Pants</option>
+          <option value="tshirts">T-Shirts</option>
+          <option value="shoes">Shoes</option>
+        </select>
+
+        <label for="subCategory">Sub Category:</label>
+        <select id="subCategory">
+          <option value="default">Select Sub-Category</option>
+        </select>
+
+        <div id="price">Price: --</div>
+        <div id="quantity">Quantity: 0</div>
+
+        <button onclick="increaseQuantity()">Increase Quantity</button>
+        <button onclick="decreaseQuantity()">Decrease Quantity</button>
+        <button onclick="addToBill()">Add to Bill</button>
+      </div>
+
+      <div class="block" id="billSummary">
+        <!-- Bill summary will be updated here -->
+      </div>
+    </div>
+
+    <script>
+        const categories = {
+            shirts: [
+                { name: "Normal", ourPrice: 400, MarketPrice: 499 },
+                { name: "Korean", ourPrice: 450, MarketPrice: 599 },
+                { name: "Rare", ourPrice: 450, MarketPrice: 599 },
+                { name: "Premium", ourPrice: 650, MarketPrice: 849 },
+                { name: "Branded", ourPrice: 650, MarketPrice: 2199 },
+                { name: "Rare Rabbit", ourPrice: 750, MarketPrice: 2999 },
+            ],
+            pants: [
+                { name: "Torn", ourPrice: 350, MarketPrice: 449 },
+                { name: "Cargo", ourPrice: 600, MarketPrice: 849 },
+                { name: "Premium Formals", ourPrice: 600, MarketPrice: 849 },
+                { name: "Normal Formals", ourPrice: 500, MarketPrice: 649 },
+                { name: "Jeans", ourPrice: 600, MarketPrice: 849 },
+                { name: "Baggy", ourPrice: 650, MarketPrice: 899 },
+                { name: "Parachute Baggy", ourPrice: 700, MarketPrice: 1049 },
+                { name: "8 Pocket Baggy", ourPrice: 750, MarketPrice: 1099 },
+            ],
+            tshirts: [
+                { name: "Down Shoulder", ourPrice: 300, MarketPrice: 399 },
+                { name: "Premium Backprint", ourPrice: 450, MarketPrice: 649 },
+                {
+                    name: "Premium Full Sleeves Backprint",
+                    ourPrice: 500,
+                    MarketPrice: 699,
+                },
+                { name: "Premium Down Shoulder", ourPrice: 550, MarketPrice: 699 },
+                {
+                    name: "Premium Full Sleeves Down Shoulder",
+                    ourPrice: 550,
+                    MarketPrice: 699,
+                },
+                { name: "Sweat Shirt", ourPrice: 300, MarketPrice: 499 },
+                { name: "Premium Hoodie", ourPrice: 650, MarketPrice: 899 },
+                { name: "Hoodie", ourPrice: 600, MarketPrice: 749 },
+            ],
+            shoes: [
+                { name: "Normal", ourPrice: 450, MarketPrice: 649 },
+                { name: "High", ourPrice: 500, MarketPrice: 699 },
+                { name: "Rare", ourPrice: 550, MarketPrice: 749 },
+                { name: "Premium", ourPrice: 650, MarketPrice: 999 },
+            ],
+        };
+    
+        const mainCategory = document.getElementById("mainCategory");
+        const subCategory = document.getElementById("subCategory");
+        const priceDisplay = document.getElementById("price");
+        const quantityDisplay = document.getElementById("quantity");
+        const billSummary = document.getElementById("billSummary");
+    
+        let selectedSubCategory = null;
+        let quantity = 0;
+        let grandTotal = 0;
+        let totalSavings = 0;
+        let cartItems = [];
+    
+        mainCategory.addEventListener("change", () => {
+            const selectedMainCategory = mainCategory.value;
+            subCategory.innerHTML =
+                '<option value="default">Select Sub-Category</option>';
+    
+            if (categories[selectedMainCategory]) {
+                categories[selectedMainCategory].forEach((item) => {
+                    const option = document.createElement("option");
+                    option.value = item.name;
+                    option.textContent = item.name;
+                    option.dataset.ourPrice = item.ourPrice;
+                    option.dataset.MarketPrice = item.MarketPrice;
+                    subCategory.appendChild(option);
+                });
+            }
+            updatePrice();
+        });
+    
+        subCategory.addEventListener("change", () => {
+            selectedSubCategory = subCategory.options[subCategory.selectedIndex];
+            updatePrice();
+        });
+    
+        function updatePrice() {
+            if (selectedSubCategory && selectedSubCategory.value !== "default") {
+                const ourPrice = selectedSubCategory.dataset.ourPrice;
+                const MarketPrice = selectedSubCategory.dataset.MarketPrice;
+                priceDisplay.innerHTML = `Price: <strike>₹${MarketPrice}</strike> <strong>₹${ourPrice}</strong>`;
+            } else {
+                priceDisplay.innerHTML = "Price: --";
+            }
+        }
+    
+        function increaseQuantity() {
+            quantity++;
+            updateQuantityDisplay();
+        }
+    
+        function decreaseQuantity() {
+            if (quantity > 0) {
+                quantity--;
+                updateQuantityDisplay();
+            }
+        }
+    
+        function updateQuantityDisplay() {
+            quantityDisplay.textContent = `Quantity: ${quantity}`;
+        }
+    
+        function addToBill() {
+            if (
+                !selectedSubCategory ||
+                selectedSubCategory.value === "default" ||
+                quantity === 0
+            ) {
+                alert("Please select a valid sub-category and quantity.");
+                return;
+            }
+    
+            const category = mainCategory.options[mainCategory.selectedIndex].value;
+            const subCategoryName = selectedSubCategory.value;
+            const ourPrice = parseFloat(selectedSubCategory.dataset.ourPrice);
+            const MarketPrice = parseFloat(selectedSubCategory.dataset.MarketPrice);
+            const subtotal = ourPrice * quantity;
+            const saved = (MarketPrice - ourPrice) * quantity;
+    
+            cartItems.push({
+                quantity,
+                category,
+                subCategory: subCategoryName,
+                ourCost: subtotal,
+                showroomCost: MarketPrice * quantity,
+            });
+    
+            grandTotal += subtotal;
+            totalSavings += saved;
+    
+            updateBillSummary();
+            resetAfterAdd();
+        }
+    
+        function removeItem(index) {
+            const removedItem = cartItems.splice(index, 1)[0];
+    
+            grandTotal -= removedItem.ourCost;
+            totalSavings -= removedItem.showroomCost - removedItem.ourCost;
+    
+            updateBillSummary();
+        }
+    
+        function updateBillSummary() {
+            if (cartItems.length === 0) {
+                billSummary.innerHTML = `<p>No items added yet</p>`;
+                return;
+            }
+    
+            const itemsHTML = cartItems
+                .map(
+                    (item, index) => `
+                        <li>
+                            ${item.quantity} ${item.category} (${item.subCategory}) - 
+                            Showroom Cost: <strike>₹${item.showroomCost}</strike> 
+                            Our Cost: <strong>₹${item.ourCost}</strong>
+                            <button onclick="removeItem(${index})">Remove</button>
+                        </li>
+                    `
+                )
+                .join("");
+    
+            billSummary.innerHTML = `
+                You have taken:
+                <ul>${itemsHTML}</ul>
+                <strong>Grand Total: ₹${grandTotal.toFixed(2)}</strong><br>
+                You saved ₹${totalSavings.toFixed(2)} in total 🎉🎉<br>
+                -- Thank you. Visit Again 😄😄 --
+            `;
+        }
+    
+        function resetAfterAdd() {
+            quantity = 0;
+            updateQuantityDisplay();
+            subCategory.innerHTML =
+                '<option value="default">Select Sub-Category</option>';
+            mainCategory.value = "default";
+            priceDisplay.innerHTML = "Price: --";
+            selectedSubCategory = null;
+        }
+    </script>
+    
+  </body>
+</html>
